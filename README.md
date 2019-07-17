@@ -13,7 +13,7 @@ sudo python setup.py install
 
 ## Support op
 
-| support trt op | support torch op | Implementation Method |
+| Support trt op | Support torch op | Implementation method |
 |:-:|:-:|:-:|
 | AdaptiveAvgPool2d | torch.nn.AdaptiveAvgPool2d | tensorrt.INetworkDefinition.add_pooling |
 | add | torch.Tensor.__add__ | tensorrt.INetworkDefinition.add_elementwise| 
@@ -38,6 +38,7 @@ sudo python setup.py install
 | pad | torch.nn.functional.pad | tensorrt.INetworkDefinition.add_padding	|
 | sigmoid | torch.sigmoid  torch.nn.functional.sigmoid  torch.nn.Sigmoid | tensorrt.INetworkDefinition.add_activation |
 | squeeze | torch.squeeze  torch.Tensor.squeeze | tensorrt.INetworkDefinition.add_shuffle	|
+| functional_conv2d | torch.nn.functional.conv2d | tensorrt.INetworkDefinition.add_convolution	|
 
 
 
