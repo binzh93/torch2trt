@@ -13,7 +13,7 @@ sudo python setup.py install
 
 ## Support op
 
-|support torch op| Implementation Method | examples |
+| support trt op | support torch op | Implementation Method |
 |:-:|:-:|:-:|
 | AdaptiveAvgPool2d | torch.nn.AdaptiveAvgPool2d | tensorrt.INetworkDefinition.add_pooling |
 | add | torch.Tensor.__add__ | tensorrt.INetworkDefinition.add_elementwise| 
