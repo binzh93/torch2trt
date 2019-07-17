@@ -34,7 +34,7 @@ sudo python setup.py install
 | transpose | torch.transpose | tensorrt.INetworkDefinition.add_shuffle  (tensorrt.IShuffleLayer) | 
 | view | torch.Tensor.reshape  torch.Tensor.view | tensorrt.INetworkDefinition.add_shuffle	|
 | interpolate | torch.nn.functional.interpolate	| self define plugin |
-| multiply | torch.Tensor.__mul__ |  tensorrt.INetworkDefinition.add_elementwise |
+| mul | torch.Tensor.__mul__ |  tensorrt.INetworkDefinition.add_elementwise |
 | pad | torch.nn.functional.pad | tensorrt.INetworkDefinition.add_padding	|
 | sigmoid | torch.sigmoid  torch.nn.functional.sigmoid  torch.nn.Sigmoid | tensorrt.INetworkDefinition.add_activation |
 | squeeze | torch.squeeze  torch.Tensor.squeeze | tensorrt.INetworkDefinition.add_shuffle	|
