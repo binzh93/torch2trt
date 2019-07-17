@@ -19,6 +19,13 @@ from .ReLU6 import *
 from .view import *
 from .transpose import *
 from .mean import *
+# new add 
+from .Sigmoid import *
+from .sigmoid import *
+from .mul import *  # TODO
+from .functional_conv2d import *
+from .pad import *
+from .squeeze import *
 
 try:
     from .interpolate import *

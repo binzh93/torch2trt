@@ -2,6 +2,9 @@ import torch
 import tensorrt as trt
 from copy import copy
 import numpy as np
+import os
+import os.path as osp
+from .trt_helper import save_engine, check_type, check_shape
 
 
 # UTILITY FUNCTIONS
@@ -161,6 +164,41 @@ class ConversionContext(object):
                 )
                 trt_tensor.location = torch_device_to_trt(torch_input.device)
                 torch_input._trt = trt_tensor
+            
+    def add_scale_method(self, inputs, mean, std):
+        '''
+        TensorRT: add_scale
+        model:
+            UNIFORM : Identical coefficients across all elements of the tensor.
+            CHANNEL : Per-channel coefficients. The channel dimension is assumed to be the third to last dimension.
+            ELEMENTWISE : Elementwise coefficients.
+        𝑜𝑢𝑡𝑝𝑢𝑡=(𝑖𝑛𝑝𝑢𝑡∗𝑠𝑐𝑎𝑙𝑒+𝑠ℎ𝑖𝑓𝑡)^𝑝𝑜𝑤𝑒𝑟  => 𝑜𝑢𝑡𝑝𝑢𝑡=[(𝑖𝑛𝑝𝑢𝑡-(-𝑠ℎ𝑖𝑓𝑡/𝑠𝑐𝑎𝑙𝑒))/(1/𝑠𝑐𝑎𝑙𝑒)]^𝑝𝑜𝑤𝑒𝑟
+        '''
+        shift = np.asarray(mean, dtype=np.float32)
+        scale = np.asarray(std, dtype=np.float32)
+        scale = 1.0 / scale
+        shift = - shift * scale
+        power = np.ones_like(scale, dtype=np.float32)
+
+        # auto set mode 
+        if check_shape([shift, scale, power], [(1, )] * 3):
+            mode = trt.ScaleMode.UNIFORM
+        elif check_shape([shift, scale, power], [(inputs[0].shape[1], )] * 3):   # inputs[0] => (N,C,H,W)
+            mode = trt.ScaleMode.CHANNEL
+        elif check_shape([shift, scale, power], [inputs[0].shape[1:]]*3):
+            mode = trt.ScaleMode.ELEMENTWISE
+        else:
+            raise("Check your shift and scale!!!")
+
+        for i, t in enumerate(inputs):
+            scale_layer = self.network.add_scale(
+                input=t._trt,
+                mode=mode,
+                shift=shift,
+                scale=scale,
+                power=power,
+            )
+            t._trt = scale_layer.get_output(0)
 
     def mark_outputs(self, torch_outputs, names=None):
         if names is None:
@@ -235,7 +273,7 @@ class TRTModule(torch.nn.Module):
 
 
 def torch2trt(module, inputs, input_names=None, output_names=None, log_level=trt.Logger.ERROR, max_batch_size=1,
-        fp16_mode=False, max_workspace_size=0):
+        fp16_mode=False, max_workspace_size=0, cfgs=None, engine_dest_path=None):
 
     # copy inputs to avoid modifications to source data
     inputs = [tensor.clone() for tensor in inputs]
@@ -248,6 +286,10 @@ def torch2trt(module, inputs, input_names=None, output_names=None, log_level=trt
         if not isinstance(inputs, tuple):
             inputs = (inputs, )
         ctx.add_inputs(inputs, input_names)
+
+        if cfgs:
+            mean, std = cfgs['mean'], cfgs['std']
+            ctx.add_scale_method(inputs, mean=mean, std=std)
 
         outputs = module(*inputs)
 
@@ -262,15 +304,21 @@ def torch2trt(module, inputs, input_names=None, output_names=None, log_level=trt
         builder.max_batch_size = max_batch_size
 
         engine = builder.build_cuda_engine(network)
-    
+
+    if engine_dest_path is not None:
+        assert check_type([engine_dest_path], [str])
+        if(os.path.isabs(engine_dest_path)): # judge is abspath or not
+            if not osp.exists(osp.dirname(engine_dest_path)):
+                os.makedirs(osp.dirname(engine_dest_path))
+        save_engine(engine, engine_dest_path)
     return TRTModule(engine, ctx.input_names, ctx.output_names, final_shapes)
 
 
 # DEFINE ALL CONVERSION FUNCTIONS
-
 
 def tensorrt_converter(method):
     def register_converter(converter):
         CONVERTERS[method] = converter
         return converter
     return register_converter
+    

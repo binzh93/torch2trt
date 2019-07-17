@@ -1,5 +1,6 @@
 from .torch2trt import *
 from .converters import *
+from .trt_helper import *
 
 
 def load_plugins():
