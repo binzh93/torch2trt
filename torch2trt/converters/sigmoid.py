@@ -1,11 +1,9 @@
 from torch2trt.torch2trt import *
-  
+from .Sigmoid import *
 
-@tensorrt_converter('torch.nn.Sigmoid.forward')
-def convert_Sigmoid(ctx):
-    input = ctx.method_args[1]
-    output = ctx.method_return
-    
-    layer = ctx.network.add_activation(
-        input=input._trt, type=trt.ActivationType.SIGMOID)
-    output._trt = layer.get_output(0)
+
+@tensorrt_converter('torch.sigmoid')
+@tensorrt_converter('torch.nn.functional.sigmoid')
+def convert_sigmoid(ctx):
+    ctx.method_args = (torch.nn.Sigmoid(),) + ctx.method_args
+    convert_Sigmoid(ctx)
