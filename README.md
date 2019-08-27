@@ -2,13 +2,77 @@
 
 This is a repo fork from Nvidia torch2trt
 
-## Setup
+# Requirements 
+```
+TensorRT 5.1.5
+python3
+```
+
+## Setup1
 ```shell
 git clone https://github.com/binzh93/torch2trt.git
 cd torch2trt
-sudo python setup.py install
+python3 setup.py install
 ```
 
+## Setup2(Plugins)
+1. To install plugins, call the following
+```
+apt-get install libprotobuf* protobuf-compiler ninja-build
+```  
+
+2. protobuf(3.9)
+method(official): https://github.com/protocolbuffers/protobuf/blob/master/src/README.md  
+
+3. gcc 4.8.5  
+```Shell
+apt-get install -y gcc-4.8
+apt-get install -y g++-4.8
+```
+```
+cd /usr/bin
+rm gcc
+ln -s gcc-4.8 gcc 
+rm g++
+ln -s g++-4.8 g++
+```
+4. build plugin    
+```Shell
+python setup.py install --plugins
+```
+
+
+* Differences with official code: 
+    * add protobuf lib path to rule link of build.py   
+    * add a -std=c++11 flag to rule cxx  
+
+Check the plugin
+```Shell
+python3 -m torch2trt.test --name=interpolate
+```
+
+
+## Usage
+```python
+from torch2trt import torch2trt
+from torchvision.models.resnet import resnet18
+
+# create some regular pytorch model...
+model = resnet18(pretrained=True).eval().cuda()
+
+# create example data
+x = torch.ones((1, 3, 224, 224)).cuda()
+
+# convert to TensorRT feeding sample data as input
+model_trt = torch2trt(model, [x])
+
+y = model(x)
+y_trt = model_trt(x)
+
+# check the output against PyTorch
+print(torch.max(torch.abs(y - y_trt)))
+
+```
 
 
 ## Support op

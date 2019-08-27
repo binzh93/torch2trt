@@ -24,4 +24,8 @@ def convert_MaxPool2d(ctx):
     layer.stride = stride
     layer.padding = padding
 
+    # add ceil_mode, ceil_mode=False by default in torch
+    if module.ceil_mode:  
+        layer.padding_mode = trt.PaddingMode.SAME_UPPER
+
     output._trt = layer.get_output(0)

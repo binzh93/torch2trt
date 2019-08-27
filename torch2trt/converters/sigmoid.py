@@ -1,7 +1,6 @@
 from torch2trt.torch2trt import *
 from .Sigmoid import *
 
-
 @tensorrt_converter('torch.sigmoid')
 @tensorrt_converter('torch.nn.functional.sigmoid')
 def convert_sigmoid(ctx):
